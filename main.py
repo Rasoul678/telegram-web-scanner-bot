@@ -79,7 +79,9 @@ def take_screenshot(url: str, is_vfs:bool=False):
     }
 
     if is_vfs:
-        params["css"] = "body%7Bbackground-color%3A%23000%3B%7D%0Ap%2Ch2%2Ch3%20%7Bcolor%3A%23FFF%20!important%3B%7D"
+        params["full_page"] = "false"
+        params["element"] = "#news-title"
+        params["css"] = "body{background-color:#000;}p,h2,h3{color:#FFF !important;}"
 
     r = requests.get(apiflash_url, params=params)
 
