@@ -17,7 +17,7 @@ VFS_CACHE_FILE = "/tmp/vfs_last_hash.json"
 EMB_SCREENSHOT_FILE = "embassy_screenshot.png"
 VFS_SCREENSHOT_FILE = "vfs_screenshot.png"
 
-TARGET_TIMES = ["01:00","06:00","09:00","12:00","14:00","16:00","18:00","20:00","22:00","23:00","00:00","00:30"]
+TARGET_TIMES = ["00:00","00:30","01:00","06:00","09:00","12:00","14:00","16:00","18:00","20:00","22:00","23:00"]
 
 def get_site_hash(url):
     try:
@@ -120,9 +120,8 @@ def check_site(url:str,cache:str,time:str):
         if time in TARGET_TIMES:
             print("✅ تغییری در سایت ایجاد نشد!")
             send_telegram(f"✅ تغییری در سایت ایجاد نشد!\n{url}")
-            if time in ["09:00","12:00","23:00"]:
-                send_image_to_telegram(EMB_SCREENSHOT_FILE, "سایت سفارت 🇦🇹")
-                send_image_to_telegram(VFS_SCREENSHOT_FILE, "سایت vfs ایران-اتریش")
+            send_image_to_telegram(EMB_SCREENSHOT_FILE, "سایت سفارت 🇦🇹")
+            send_image_to_telegram(VFS_SCREENSHOT_FILE, " 🇮🇷-🇦🇹 vfs سایت")
 
 
     write_cached_hash(EMB_CACHE_FILE, new_hash)
