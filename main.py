@@ -63,20 +63,22 @@ def send_image_to_telegram(image_path, caption):
     with open(image_path, "rb") as photo:
         requests.post(url, data={"chat_id": CHAT_ID, "caption": caption}, files={"photo": photo})
 
-def take_screenshot(url: str, is_vfs:bool=False):
+def take_screenshot(url: str, is_vfs:bool=False, is_fresh:bool=False):
     """Take picture"""
     apiflash_url = "https://api.apiflash.com/v1/urltoimage"
     params = {
         "access_key": ACCESS_KEY,
         "url": url,
         "format":"jpeg" ,
-        "fresh":"true" ,
         "response_type":"image",
         "no_cookie_banners":"true",
         "full_page":"true",
         "scroll_page":"true",
         "wait_until":"network_idle"
     }
+
+    if is_fresh:
+        params["fresh"] = "true"
 
     if is_vfs:
         params["full_page"] = "false"
@@ -90,9 +92,9 @@ def take_screenshot(url: str, is_vfs:bool=False):
     with open(file_name, "wb") as f:
         f.write(r.content)
 
-def refresh_screenshots(url:str):
-    take_screenshot(url)
-    take_screenshot(url=VFS_URL, is_vfs=True)
+def refresh_screenshots(url:str, is_fresh:bool=False):
+    take_screenshot(url, is_fresh=is_fresh)
+    take_screenshot(url=VFS_URL, is_vfs=True,is_fresh=is_fresh)
 
 def check_site(url:str,cache:str,time:str):
     new_hash = get_site_hash(url)
@@ -108,18 +110,17 @@ def check_site(url:str,cache:str,time:str):
         return
 
     if new_hash != old_hash:
-        refresh_screenshots(url)
-
+        refresh_screenshots(url, is_fresh=True)
         print("⚠️ Site changed!")
         send_telegram(f"⚠️ Website changed!\n{url}")
         send_image_to_telegram(EMB_SCREENSHOT_FILE, "⚠️❌❌❌ سایت سفارت تغییر کرد!❌❌❌⚠️")
         send_image_to_telegram(VFS_SCREENSHOT_FILE, "سایت vfs ایران-اتریش")
     else:
+        refresh_screenshots(url)
         if time in TARGET_TIMES:
             print("✅ تغییری در سایت ایجاد نشد!")
             send_telegram(f"✅ تغییری در سایت ایجاد نشد!\n{url}")
-            if time in ["09:00","23:00"]:
-                refresh_screenshots(url)
+            if time in ["09:00","12:00","23:00"]:
                 send_image_to_telegram(EMB_SCREENSHOT_FILE, "سایت سفارت 🇦🇹")
                 send_image_to_telegram(VFS_SCREENSHOT_FILE, "سایت vfs ایران-اتریش")
 
