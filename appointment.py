@@ -1,4 +1,3 @@
-from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
@@ -8,6 +7,8 @@ import time
 import random
 import requests
 import os
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -27,32 +28,40 @@ def send_telegram(msg):
         print(f"❌ Telegram send failed: {e}")
         send_telegram(f"❌ Telegram send failed: {e}")
 
-def main():
-    options = webdriver.ChromeOptions()
-
-    # --- Reduce bot detection ---
-    options.add_argument("--disable-blink-features=AutomationControlled")
-    options.add_argument("--disable-infobars")
-    options.add_argument("--start-maximized")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--no-sandbox")
+def create_driver():
+    chrome_options = Options()
+    chrome_options.add_argument("--headless=new")   # Required in CI
+    chrome_options.add_argument("--no-sandbox")     # Required in GitHub Actions
+    chrome_options.add_argument("--disable-dev-shm-usage")  # Prevent crashes
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--disable-dev-tools")
+    chrome_options.add_argument("--remote-debugging-port=9222")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument("--disable-infobars")
+    chrome_options.add_argument("--start-maximized")
+    chrome_options.add_argument("--disable-dev-shm-usage")
 
     # Normal human-like user-agent
-    options.add_argument(
+    chrome_options.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
         "Chrome/120.0.0.0 Safari/537.36"
     )
 
     # Disable "Chrome is being controlled by automated test software"
-    options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
+    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    chrome_options.add_experimental_option("useAutomationExtension", False)
 
     driver = webdriver.Chrome(
         service=Service(ChromeDriverManager().install()),
-        options=options
+        options=chrome_options
     )
+
+    return driver
+
+def main():
+    driver = create_driver()
 
     # Open the website
     driver.get("https://appointment.bmeia.gv.at")
