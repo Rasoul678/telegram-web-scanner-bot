@@ -86,7 +86,7 @@ def main():
 
     print("=== Office Options ===")
     print(all_options)
-    send_telegram(message_text)
+    # send_telegram(message_text)
 
     driver.quit()
 
