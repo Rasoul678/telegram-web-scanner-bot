@@ -1,77 +1,85 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+import random
 import requests
-from bs4 import BeautifulSoup
 import os
-import json
-# from lxml import html
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-URL = "https://appointment.bmeia.gv.at/"
-
-CACHE_FILE = ".cache_office.json"   # در Cache کار می‌کند، نه در ریپو
-
 def send_telegram(msg):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    r = requests.post(url, data={"chat_id": CHAT_ID, "text": msg})
-    print("Telegram status:", r.status_code)
-
-
-def load_cache():
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            return json.load(f)
-    return {"options": []}
-
-
-def save_cache(data):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(data, f)
-
-
-def fetch_options():
-    resp = requests.get(URL)
-    resp.raise_for_status()
-
-    # tree = html.fromstring(resp.content)
-    #
-    # options = tree.xpath('//select[@id="Office"]/option/text()')
-    # print(options)
-    # return options
-
-    soup = BeautifulSoup(resp.text, "html.parser")
-    select = soup.find("select", {"id": "Office"})
-
-    if not select:
-        raise Exception("Select with id=Office not found!")
-
-    return [opt.get_text(strip=True) for opt in select.find_all("option")]
-
+    if not BOT_TOKEN or not CHAT_ID:
+        print("⚠️ Missing Telegram credentials.")
+        return
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage",
+            data={"chat_id": CHAT_ID, "text": msg},
+            timeout=10,
+        )
+        print("📨 Telegram message sent.")
+    except Exception as e:
+        print(f"❌ Telegram send failed: {e}")
+        send_telegram(f"❌ Telegram send failed: {e}")
 
 def main():
-    print("Checking Office list...")
+    options = webdriver.ChromeOptions()
 
-    options = fetch_options()
-    cache = load_cache()
-    old = cache["options"]
+    # --- Reduce bot detection ---
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-infobars")
+    options.add_argument("--start-maximized")
+    options.add_argument("--disable-gpu")
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument("--no-sandbox")
 
-    print("Old:", old)
-    print("New:", options)
+    # Normal human-like user-agent
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    )
 
-    if "BANGKOK" in options:
-        send_telegram("BANGKOK!")
+    # Disable "Chrome is being controlled by automated test software"
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
 
-    # چک اضافه شدن TEHERAN
-    if "TEHERAN" in options and "TEHERAN" not in old:
+    driver = webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()),
+        options=options
+    )
+
+    # Open the website
+    driver.get("https://appointment.bmeia.gv.at")
+
+    # Random wait to simulate human
+    time.sleep(2 + random.random() * 2)
+
+    # Wait for the select element #Office to load
+    wait = WebDriverWait(driver, 30)
+    office_select = wait.until(EC.presence_of_element_located((By.ID, "Office")))
+
+    # Get all option texts
+    options_list = office_select.find_elements(By.TAG_NAME, "option")
+
+    # Extract options text
+    all_options = [opt.text.strip() for opt in options_list]
+    message_text = "Office options:\n\n" + "\n".join(all_options)
+
+    if "TEHERAN" in all_options:
+        # Send to Telegram
         send_telegram("🟢 گزینه TEHERAN در لیست Office اضافه شد!")
 
-    # چک حذف شدن TEHERAN
-    if "TEHERAN" not in options and "TEHERAN" in old:
-        send_telegram("🔴 گزینه TEHERAN از لیست Office حذف شد!")
+    print("=== Office Options ===")
+    print(all_options)
+    send_telegram(message_text)
 
-    # ذخیره وضعیت جدید
-    save_cache({"options": options})
-
+    driver.quit()
 
 if __name__ == "__main__":
     main()
