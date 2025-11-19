@@ -1,0 +1,42 @@
+name: Check Teheran Appointment
+
+on:
+  schedule:
+    - cron: "*/1 * * * *"   # هر ۱ دقیقه
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Restore cache
+        uses: actions/cache@v4
+        with:
+          path: .cache_office.json
+          key: office-cache
+          restore-keys: |
+            office-cache
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run script
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python appointment.py
+
+      - name: Save cache
+        uses: actions/cache@v4
+        with:
+          path: .cache_office.json
+          key: office-cache
