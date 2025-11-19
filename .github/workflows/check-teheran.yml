@@ -2,8 +2,8 @@ name: Run Selenium Appointment Checker
 
 on:
   workflow_dispatch:     # manual run
-  schedule:
-    - cron: "*/1 * * * *"   # run every 1 minutes
+#  schedule:
+#    - cron: "*/1 * * * *"   # run every 1 minutes
 
 jobs:
   run-script:
@@ -18,7 +18,7 @@ jobs:
 
     - name: Install ChromeDriver
       uses: nanasess/setup-chromedriver@v2
-      
+
     - name: Install Python
       uses: actions/setup-python@v4
       with:
